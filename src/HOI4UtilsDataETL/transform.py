@@ -99,8 +99,36 @@ def parse_value(value: str) -> Union[str, int, float]:
             return value
 
 
+def is_ship_subunit(unit_data: dict):
+    print("")
+    for sub_unit_data in unit_data["sub_units"].values():
+        yield sub_unit_data.get("map_icon_category", None) == "ship"
+
+def transform_hoi4_unit_data(directory: HOI4Directory) -> dict:
+    unit_data = transform_hoi4_data_directory(directory.units())
+    result = {
+        "air": dict(),
+        "land": dict(),
+        "sea": dict()
+    }
+
+    for unit_key, unit_data in unit_data.items():
+        if unit_key == "air":
+            result[unit_key] = unit_data
+        elif any(is_ship_subunit(unit_data)):
+            if not all(is_ship_subunit(unit_data)):
+                HOI4DataParseError("Some sub unit is not in a ship in a list of ships: {}".format(unit_data))
+            result["sea"][unit_key] = unit_data
+        else:
+            result["land"][unit_key] = unit_data
+
+    return result
+
+
+
 if __name__ == "__main__":
     # Temporary test
     import json
     hoi4_dir = HOI4Directory('D:\\SteamLibrary\\steamapps\\common\\Hearts of Iron IV')
-    print(json.dumps(transform_hoi4_data_directory(hoi4_dir.equipment()), indent=2))
+    # print(json.dumps(transform_hoi4_data_directory(hoi4_dir.units()), indent=2))
+    print(json.dumps(transform_hoi4_unit_data(hoi4_dir), indent=2))
